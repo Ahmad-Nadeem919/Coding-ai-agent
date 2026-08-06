@@ -1,0 +1,19 @@
+﻿python.exe : INFO:     Started server process [7948]
+At line:1 char:340
++ ... nt\backend; & .\.venv\Scripts\python.exe -m uvicorn app.main:app --ho ...
++                 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : NotSpecified: (INFO:     Started server process [7948]:String) [], RemoteExcept 
+   ion
+    + FullyQualifiedErrorId : NativeCommandError
+ 
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:     127.0.0.1:51262 - "GET /api/health HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51270 - "GET /api/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51270 - "POST /api/sessions HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51270 - "GET /api/files/tree?path=. HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51270 - "GET /api/settings HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51270 - "POST /api/shell/run HTTP/1.1" 200 OK
+INFO:     127.0.0.1:51274 - "POST /api/chat/stream HTTP/1.1" 200 OK
+INFO:     127.0.0.1:54458 - "OPTIONS /api/chat/stream HTTP/1.1" 200 OK
