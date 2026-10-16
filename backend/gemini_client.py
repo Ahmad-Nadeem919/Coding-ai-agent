@@ -39,14 +39,19 @@ class GeminiClient:
         model_name: str = "gemini-2.5-flash",
         max_retries: int = 5,
         timeout: int = 120,
+        web_search: bool = True,
     ) -> None:
         self.model_name = model_name
         self.max_retries = max_retries
         self.timeout = timeout
+        self.web_search = web_search
         self._client = genai.Client(api_key=api_key)
 
     def set_model(self, model_name: str) -> None:
         self.model_name = model_name
+
+    def set_web_search(self, enabled: bool) -> None:
+        self.web_search = enabled
 
     def _build_config(
         self,
@@ -54,11 +59,34 @@ class GeminiClient:
         temperature: float | None,
         max_output_tokens: int | None,
     ) -> types.GenerateContentConfig:
+        tools = [types.Tool(google_search=types.GoogleSearch())] if self.web_search else None
         return types.GenerateContentConfig(
             system_instruction=system_prompt,
             temperature=temperature,
             max_output_tokens=max_output_tokens,
+            tools=tools,
         )
+
+    @staticmethod
+    def _format_sources(grounding_metadata) -> str:
+        """Render a Markdown "Sources" footer from grounding metadata, if any."""
+        if grounding_metadata is None:
+            return ""
+        chunks = getattr(grounding_metadata, "grounding_chunks", None) or []
+        seen: set[str] = set()
+        lines: list[str] = []
+        for chunk in chunks:
+            web = getattr(chunk, "web", None)
+            if web is None or not web.uri:
+                continue
+            if web.uri in seen:
+                continue
+            seen.add(web.uri)
+            title = web.title or web.uri
+            lines.append(f"- [{title}]({web.uri})")
+        if not lines:
+            return ""
+        return "\n\n**Sources:**\n" + "\n".join(lines)
 
     @staticmethod
     def _is_retryable(exc: Exception) -> bool:
@@ -81,7 +109,11 @@ class GeminiClient:
                 response = self._client.models.generate_content(
                     model=self.model_name, contents=contents, config=config
                 )
-                return response.text or ""
+                text = response.text or ""
+                grounding_metadata = None
+                if response.candidates:
+                    grounding_metadata = response.candidates[0].grounding_metadata
+                return text + self._format_sources(grounding_metadata)
             except Exception as exc:  # noqa: BLE001 - SDK error types vary by version
                 last_error = exc
                 if not self._is_retryable(exc) or attempt == self.max_retries:
@@ -140,10 +172,19 @@ class GeminiClient:
         if stream is None:
             raise GeminiClientError(f"Failed to reach Gemini API: {last_error}")
 
+        grounding_metadata = None
         try:
             for chunk in stream:
                 text = getattr(chunk, "text", None)
                 if text:
                     yield text
+                if chunk.candidates:
+                    candidate_metadata = chunk.candidates[0].grounding_metadata
+                    if candidate_metadata is not None:
+                        grounding_metadata = candidate_metadata
         except Exception as exc:  # noqa: BLE001
             raise GeminiClientError(f"Gemini response stream was interrupted: {exc}") from exc
+
+        sources = self._format_sources(grounding_metadata)
+        if sources:
+            yield sources

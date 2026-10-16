@@ -50,6 +50,8 @@ class Config:
         max_history_chars: Soft cap on total characters kept in active memory.
         request_timeout: Per-request timeout (seconds) for the Gemini API.
         max_retries: Maximum retry attempts for transient API failures.
+        web_search: Whether the model may ground responses with live Google
+            Search results.
     """
 
     gemini_api_key: str
@@ -57,6 +59,7 @@ class Config:
     temperature: float = DEFAULT_TEMPERATURE
     max_output_tokens: int = DEFAULT_MAX_OUTPUT_TOKENS
     streaming: bool = True
+    web_search: bool = True
     workdir: Path = field(default_factory=Path.cwd)
     app_dir: Path = field(default_factory=_default_app_dir)
     history_dir: Path = field(init=False)
@@ -114,6 +117,8 @@ class Config:
             "request_timeout": int(
                 os.getenv("GEMINI_REQUEST_TIMEOUT", DEFAULT_REQUEST_TIMEOUT)
             ),
+            "web_search": os.getenv("GEMINI_WEB_SEARCH", "true").strip().lower()
+            not in ("0", "false", "no", "off"),
         }
 
         for key, value in overrides.items():

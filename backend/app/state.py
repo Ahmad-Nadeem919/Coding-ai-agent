@@ -39,6 +39,7 @@ def get_state() -> AppState:
         model_name=config.model_name,
         max_retries=config.max_retries,
         timeout=config.request_timeout,
+        web_search=config.web_search,
     )
     history_manager = HistoryManager(config.history_dir)
     return AppState(config=config, client=client, history_manager=history_manager)

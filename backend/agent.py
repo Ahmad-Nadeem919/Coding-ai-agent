@@ -40,6 +40,7 @@ HELP_ROWS: list[tuple[str, str]] = [
     ("/history [id]", "List saved sessions, or resume the given one"),
     ("/clear", "Clear the screen and reset the current conversation"),
     ("/model [name|temperature=X]", "Show or change the active model/temperature"),
+    ("/websearch [on|off]", "Show or toggle live web search grounding"),
     ("/read <file>", "Display a file and share it with the assistant"),
     ("/write <file>", "Ask the assistant to generate a new file"),
     ("/edit <file>", "Ask the assistant to modify an existing file"),
@@ -65,6 +66,7 @@ class CodingAgent:
             model_name=config.model_name,
             max_retries=config.max_retries,
             timeout=config.request_timeout,
+            web_search=config.web_search,
         )
         self.history_manager = HistoryManager(config.history_dir)
         self.workdir = config.workdir
@@ -86,6 +88,7 @@ class CodingAgent:
             "/history": self.cmd_history,
             "/clear": self.cmd_clear,
             "/model": self.cmd_model,
+            "/websearch": self.cmd_websearch,
             "/exit": self.cmd_exit,
             "/quit": self.cmd_exit,
             "/read": self.cmd_read,
@@ -125,6 +128,7 @@ class CodingAgent:
         self.console.print(
             Panel(
                 f"[accent]Coding Agent[/accent] — powered by Gemini ({self.config.model_name})\n"
+                f"Web search: [muted]{'on' if self.config.web_search else 'off'}[/muted]\n"
                 f"Working directory: [muted]{self.workdir}[/muted]\n"
                 f"Session: [muted]{self.memory.session_id}[/muted]\n"
                 "Type a message to chat, or [bold]/help[/bold] for commands.",
@@ -278,6 +282,20 @@ class CodingAgent:
         self.config.model_name = arg
         self.client.set_model(arg)
         print_success(f"Model set to {arg}.")
+
+    def cmd_websearch(self, arg: str) -> None:
+        arg = arg.strip().lower()
+        if not arg:
+            state = "on" if self.config.web_search else "off"
+            print_info(f"Web search: {state}")
+            return
+        if arg not in ("on", "off"):
+            print_error("Usage: /websearch [on|off]")
+            return
+        enabled = arg == "on"
+        self.config.web_search = enabled
+        self.client.set_web_search(enabled)
+        print_success(f"Web search {'enabled' if enabled else 'disabled'}.")
 
     def cmd_exit(self, _arg: str) -> None:
         if self.memory.messages:

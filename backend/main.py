@@ -32,6 +32,11 @@ def main(
     workdir: Optional[Path] = typer.Option(
         None, "--workdir", "-w", help="Project directory the agent operates in."
     ),
+    web_search: Optional[bool] = typer.Option(
+        None,
+        "--web-search/--no-web-search",
+        help="Enable or disable live Google Search grounding.",
+    ),
 ) -> None:
     """Launch the interactive coding agent (default when no subcommand is given)."""
     if ctx.invoked_subcommand is not None:
@@ -44,6 +49,8 @@ def main(
         overrides["temperature"] = temperature
     if workdir is not None:
         overrides["workdir"] = workdir
+    if web_search is not None:
+        overrides["web_search"] = web_search
 
     config = Config.load(**overrides)
 
